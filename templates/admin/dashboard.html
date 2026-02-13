@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('main.view_courses') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    All Courses
+</a>
+<a href="{{ url_for('main.admin_settings') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    Settings
+</a>
+<a href="{{ url_for('main.logout') }}" class="rounded-md bg-rose-50 px-3 py-2 text-rose-700 transition hover:bg-rose-100">
+    Logout
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Admin Dashboard</h1>
+        <p class="mt-2 text-sm text-slate-600">Manage KUCCPS courses, requirements, and university cutoffs.</p>
+
+        <form method="post" action="{{ url_for('main.add_course') }}" class="mt-6 space-y-6">
+            <div class="max-w-xs">
+                <label for="cluster" class="mb-1 block text-sm font-medium text-slate-700">Cluster (1-20)</label>
+                <select
+                    id="cluster"
+                    name="cluster"
+                    required
+                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                >
+                    {% for i in range(1, 21) %}
+                    <option value="{{ i }}">Cluster {{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <thead class="bg-slate-50 text-left text-slate-700">
+                        <tr>
+                            <th class="px-3 py-2 font-semibold">Course Name</th>
+                            <th class="px-3 py-2 font-semibold">Subject Requirements</th>
+                            <th class="px-3 py-2 font-semibold">Universities</th>
+                            <th class="px-3 py-2 font-semibold">Cutoff Points</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 bg-white">
+                        <tr class="align-top">
+                            <td class="p-3">
+                                <input
+                                    type="text"
+                                    name="name"
+                                    placeholder="e.g. Bachelor of Medicine"
+                                    required
+                                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                                >
+                            </td>
+                            <td class="p-3">
+                                <textarea
+                                    name="requirements"
+                                    rows="7"
+                                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                                    placeholder="English: C+
+Mathematics: B
+Chemistry: B
+Biology: B-
+Physics: C+"
+                                ></textarea>
+                            </td>
+                            <td class="p-3">
+                                <textarea
+                                    name="universities"
+                                    rows="7"
+                                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                                    placeholder="University of Nairobi
+Kenyatta University
+Moi University"
+                                ></textarea>
+                            </td>
+                            <td class="p-3">
+                                <textarea
+                                    name="cutoffs"
+                                    rows="7"
+                                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                                    placeholder="44.467
+44.904
+43.200"
+                                ></textarea>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+                Add Course
+            </button>
+        </form>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xl font-semibold tracking-tight text-slate-900">Existing Courses</h2>
+        <p class="mt-2 text-sm text-slate-600">Review and update all configured courses.</p>
+
+        <div class="mt-4 overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50 text-left text-slate-700">
+                    <tr>
+                        <th class="px-3 py-2 font-semibold">ID</th>
+                        <th class="px-3 py-2 font-semibold">Course</th>
+                        <th class="px-3 py-2 font-semibold">Requirements</th>
+                        <th class="px-3 py-2 font-semibold">Universities</th>
+                        <th class="px-3 py-2 font-semibold">Cutoffs</th>
+                        <th class="px-3 py-2 font-semibold">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white text-slate-700">
+                    {% for cluster, course_list in courses.items() %}
+                        {% for c in course_list %}
+                        <tr class="align-top hover:bg-slate-50">
+                            <td class="px-3 py-2">{{ c.id }}</td>
+                            <td class="px-3 py-2">
+                                <div class="font-medium text-slate-900">{{ c.name }}</div>
+                                <div class="text-xs text-slate-500">Cluster {{ cluster }}</div>
+                            </td>
+                            <td class="px-3 py-2">
+                                {% if c.requirements %}
+                                <ul class="space-y-1">
+                                    {% for s, g in c.requirements.items() %}
+                                    <li>{{ s }} &gt;= {{ g }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span class="text-slate-400">No requirements</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2">
+                                {% if c.universities %}
+                                <ul class="space-y-1">
+                                    {% for u in c.universities %}
+                                    <li>{{ u.name }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span class="text-slate-400">No universities</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2">
+                                {% if c.universities %}
+                                <ul class="space-y-1">
+                                    {% for u in c.universities %}
+                                    <li>{{ u.cutoff }}</li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <span class="text-slate-400">No cutoffs</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2">
+                                <div class="flex flex-col items-start gap-2">
+                                    <a
+                                        href="{{ url_for('main.edit_course', course_id=c.id) }}"
+                                        class="inline-flex items-center rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                    >
+                                        Edit
+                                    </a>
+                                    <form
+                                        method="post"
+                                        action="{{ url_for('main.delete_course', course_id=c.id) }}"
+                                        onsubmit="return confirm('Delete this course permanently?');"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-medium text-rose-700 transition hover:bg-rose-100"
+                                        >
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

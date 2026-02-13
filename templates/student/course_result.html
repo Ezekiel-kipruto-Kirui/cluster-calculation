@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Course Qualification{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('main.results') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    Results
+</a>
+<a href="{{ url_for('main.home') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    Calculator
+</a>
+{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ course }}</h1>
+        <div class="mt-3 flex flex-wrap gap-4 text-sm text-slate-700">
+            <p><span class="font-semibold text-slate-900">Cluster:</span> {{ cluster }}</p>
+            <p><span class="font-semibold text-slate-900">Cluster Points:</span> {{ points }}</p>
+        </div>
+    </div>
+
+    {% if subject_check.passed %}
+    <div class="grid gap-6 lg:grid-cols-2">
+        <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+            <h2 class="text-lg font-semibold text-emerald-900">Subject Requirements Met</h2>
+            <p class="mt-1 text-sm text-emerald-800">You passed the subject requirements for this course.</p>
+
+            <h3 class="mt-4 text-sm font-semibold uppercase tracking-wide text-emerald-900">Qualified Universities</h3>
+            {% if qualified %}
+            <ul class="mt-2 space-y-1 text-sm text-emerald-900">
+                {% for u, c in qualified %}
+                <li>{{ u }} (Cutoff: {{ c }})</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-2 text-sm text-emerald-800">No university qualified.</p>
+            {% endif %}
+        </article>
+
+        <article class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+            <h2 class="text-lg font-semibold text-amber-900">Not Qualified Universities</h2>
+            {% if not_qualified %}
+            <ul class="mt-2 space-y-1 text-sm text-amber-900">
+                {% for u, c in not_qualified %}
+                <li>{{ u }} (Cutoff: {{ c }})</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="mt-2 text-sm text-amber-800">You qualified for all listed universities.</p>
+            {% endif %}
+        </article>
+    </div>
+    {% else %}
+    <article class="rounded-xl border border-rose-200 bg-rose-50 p-5">
+        <h2 class="text-lg font-semibold text-rose-900">Subject Requirements Not Met</h2>
+        <p class="mt-1 text-sm text-rose-800">These requirements were not satisfied:</p>
+        <ul class="mt-3 space-y-1 text-sm text-rose-900">
+            {% for f in subject_check.failed %}
+            <li>
+                {{ f.subject }} required &gt;= {{ f.required }}
+                {% if f.student_subject %}
+                    (you had {{ f.student_subject }}: {{ f.student_grade }})
+                {% else %}
+                    (subject not done)
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </article>
+    {% endif %}
+
+    <div class="flex flex-wrap items-center gap-4">
+        <a href="{{ url_for('main.results') }}" class="text-sm font-medium text-slate-700 transition hover:text-slate-900">
+            Back to Results
+        </a>
+        <a href="{{ url_for('main.home') }}" class="text-sm font-medium text-slate-700 transition hover:text-slate-900">
+            Back Home
+        </a>
+    </div>
+</section>
+{% endblock %}

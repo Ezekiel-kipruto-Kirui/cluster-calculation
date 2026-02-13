@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Course{% endblock %}
+
+{% block top_actions %}
+<a href="{{ url_for('main.admin_dashboard') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    Dashboard
+</a>
+<a href="{{ url_for('main.view_courses') }}" class="rounded-md px-3 py-2 text-slate-700 transition hover:bg-slate-100">
+    All Courses
+</a>
+<a href="{{ url_for('main.logout') }}" class="rounded-md bg-rose-50 px-3 py-2 text-rose-700 transition hover:bg-rose-100">
+    Logout
+</a>
+{% endblock %}
+
+{% block content %}
+<section class="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <h1 class="text-2xl font-semibold tracking-tight text-slate-900">Edit Course</h1>
+    <p class="mt-2 text-sm text-slate-600">Update the selected course details.</p>
+
+    <form method="post" class="mt-6 space-y-4">
+        <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+                <label for="name" class="mb-1 block text-sm font-medium text-slate-700">Course Name</label>
+                <input
+                    id="name"
+                    name="name"
+                    value="{{ course.name }}"
+                    required
+                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                >
+            </div>
+
+            <div>
+                <label for="cluster" class="mb-1 block text-sm font-medium text-slate-700">Cluster</label>
+                <input
+                    id="cluster"
+                    name="cluster"
+                    type="number"
+                    min="1"
+                    max="20"
+                    value="{{ course.cluster }}"
+                    required
+                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                >
+            </div>
+        </div>
+
+        <div class="grid gap-4 md:grid-cols-2">
+            <div>
+                <label for="universities" class="mb-1 block text-sm font-medium text-slate-700">Universities (one per line)</label>
+                <textarea
+                    id="universities"
+                    name="universities"
+                    rows="8"
+                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                >{{ course.universities }}</textarea>
+            </div>
+
+            <div>
+                <label for="cutoffs" class="mb-1 block text-sm font-medium text-slate-700">Cutoff Points (same order)</label>
+                <textarea
+                    id="cutoffs"
+                    name="cutoffs"
+                    rows="8"
+                    class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+                >{{ course.cutoffs }}</textarea>
+            </div>
+        </div>
+
+        <div>
+            <label for="requirements" class="mb-1 block text-sm font-medium text-slate-700">Subject Requirements</label>
+            <textarea
+                id="requirements"
+                name="requirements"
+                rows="10"
+                class="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+            >{{ course.requirements }}</textarea>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+                Save Changes
+            </button>
+            <a href="{{ url_for('main.admin_dashboard') }}" class="text-sm font-medium text-slate-700 transition hover:text-slate-900">
+                Back to Dashboard
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}
