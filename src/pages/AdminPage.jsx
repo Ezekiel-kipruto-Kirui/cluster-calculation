@@ -62,7 +62,7 @@ export default function AdminPage({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-slate-600">Upload and manage course and university data.</p>
+            <p className="mt-1 text-sm text-slate-600">Upload university data.</p>
             <p className="mt-2 text-xs font-medium text-slate-500">
               Signed in as: {adminEmail || "unknown"} ({adminProfile?.role || "regular"} admin)
             </p>
