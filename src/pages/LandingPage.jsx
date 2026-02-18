@@ -57,7 +57,7 @@ export default function LandingPage({ onRestoreByCode, payableAmount }) {
             value={accessCode}
             onChange={(event) => setAccessCode(event.target.value.toUpperCase())}
             placeholder="e.g. 8F3KQ2P9"
-            className="block w-full rounded-lg border px-4 border-slate-300 bg-white text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+            className="ui-input"
             required
           />
           <button
@@ -75,4 +75,3 @@ export default function LandingPage({ onRestoreByCode, payableAmount }) {
     </section>
   );
 }
-

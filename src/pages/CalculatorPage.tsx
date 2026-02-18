@@ -12,8 +12,7 @@ const cardClass =
   "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow";
 const toggleButtonClass =
   "mt-3 inline-flex w-full items-center justify-between rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100";
-const selectClass =
-  " w-full rounded-md border border-slate-300 bg-white px-3 py-3 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500";
+const selectClass = "ui-select";
 
 type CalculatorPageProps = {
   onContinue: (grades: Record<string, string>) => void;

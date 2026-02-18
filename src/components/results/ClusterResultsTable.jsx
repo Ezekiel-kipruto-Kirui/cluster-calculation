@@ -28,7 +28,7 @@ export default function ClusterResultsTable({
                     <select
                       value={selectedCourses[cluster] || ""}
                       onChange={(event) => onSelectCourse(cluster, event.target.value)}
-                      className="block w-full rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500 sm:max-w-sm"
+                      className="ui-select sm:max-w-sm"
                     >
                       <option value="">Select Course</option>
                       {available.map((course) => (
@@ -55,4 +55,3 @@ export default function ClusterResultsTable({
     </div>
   );
 }
-

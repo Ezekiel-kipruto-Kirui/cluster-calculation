@@ -2,13 +2,18 @@ import { computeAllClusters, medicineEligibility } from "./clusterEngine";
 
 const withNoTrailingSlash = (value) => (value || "").replace(/\/+$/, "");
 
+const firebaseFunctionsBaseUrl = withNoTrailingSlash(import.meta.env.VITE_FIREBASE_FUNCTIONS_BASE_URL);
 const djangoApiBaseUrl = withNoTrailingSlash(import.meta.env.VITE_DJANGO_API_BASE_URL);
 const darajaEndpoint = (
+  import.meta.env.VITE_FIREBASE_DARAJA_URL ||
+  (firebaseFunctionsBaseUrl ? `${firebaseFunctionsBaseUrl}/stkPush` : "") ||
   import.meta.env.VITE_DJANGO_DARAJA_URL ||
   (djangoApiBaseUrl ? `${djangoApiBaseUrl}/api/daraja-emails/stk-push/` : "")
 ).trim();
 
 const emailEndpoint = (
+  import.meta.env.VITE_FIREBASE_EMAIL_URL ||
+  (firebaseFunctionsBaseUrl ? `${firebaseFunctionsBaseUrl}/sendEmail` : "") ||
   import.meta.env.VITE_DJANGO_EMAIL_URL ||
   (djangoApiBaseUrl ? `${djangoApiBaseUrl}/api/daraja-emails/send-email/` : "")
 ).trim();
@@ -41,7 +46,7 @@ export const calculateLocally = (grades) => ({
 
 export const initiateDarajaPayment = async (payload) => {
   if (!darajaEndpoint) {
-    throw new Error("Django Daraja endpoint is not configured.");
+    throw new Error("Daraja endpoint is not configured.");
   }
 
   const phone =
@@ -75,7 +80,7 @@ export const initiateDarajaPayment = async (payload) => {
 
 export const sendServiceEmail = async (payload) => {
   if (!emailEndpoint) {
-    throw new Error("Django email endpoint is not configured.");
+    throw new Error("Email endpoint is not configured.");
   }
 
   const email = String(payload?.email || "").trim();

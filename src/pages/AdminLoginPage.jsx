@@ -37,7 +37,7 @@ export default function AdminLoginPage({ isAuthenticated, onLogin, authError, is
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
-            className="block w-full rounded-md p-2 border-slate-300 text-slate-900 shadow-sm focus:shaddow-sm"
+            className="ui-input"
             placeholder="admin@example.com"
           />
         </div>
@@ -51,7 +51,7 @@ export default function AdminLoginPage({ isAuthenticated, onLogin, authError, is
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
-            className="block w-full rounded-md p-2 border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+            className="ui-input"
           />
         </div>
 

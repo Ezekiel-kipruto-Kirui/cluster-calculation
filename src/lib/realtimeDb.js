@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { get, getDatabase, ref, set } from "firebase/database";
+import { get, getDatabase, ref, remove, set, update } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -113,6 +113,42 @@ const normalizeCourseCatalog = (raw) => {
   });
 
   return normalized;
+};
+
+const normalizeRequirementsMap = (requirements) => {
+  const normalized = {};
+  Object.entries(toRequirementsObject(requirements)).forEach(([subject, grade]) => {
+    const normalizedSubject = String(subject || "").trim();
+    const normalizedGrade = String(grade || "").trim().toUpperCase();
+    if (!normalizedSubject || !normalizedGrade) return;
+    normalized[normalizedSubject] = normalizedGrade;
+  });
+  return normalized;
+};
+
+const normalizeUniversityEntry = (entry) => {
+  const name = String(entry?.name || "").trim();
+  if (!name) return null;
+  const courseCode = String(entry?.courseCode || "").trim();
+  const cutoffValue = Number(entry?.cutoff ?? 0);
+  return {
+    name,
+    courseCode,
+    cutoff: Number.isFinite(cutoffValue) ? cutoffValue : 0,
+  };
+};
+
+const universityKey = (entry) =>
+  `${String(entry?.name || "").trim().toLowerCase()}|${String(entry?.courseCode || "").trim().toLowerCase()}`;
+
+const mergeUniversityEntries = (existingUniversities = [], nextUniversities = []) => {
+  const map = new Map();
+  [...existingUniversities, ...nextUniversities].forEach((entry) => {
+    const normalized = normalizeUniversityEntry(entry);
+    if (!normalized) return;
+    map.set(universityKey(normalized), normalized);
+  });
+  return Array.from(map.values());
 };
 
 export const fetchCourseCatalog = async () => {
@@ -306,6 +342,154 @@ export const fetchClusterSessionByCode = async (code) => {
   return null;
 };
 
+const normalizeSessionResults = (value) => {
+  const raw = value && typeof value === "object" ? value : {};
+  const normalized = {};
+  for (let cluster = 1; cluster <= 20; cluster += 1) {
+    const score = Number(raw[cluster] ?? raw[String(cluster)] ?? 0);
+    normalized[cluster] = Number.isFinite(score) ? score : 0;
+  }
+  return normalized;
+};
+
+const normalizeSessionGrades = (value) => {
+  if (!value || typeof value !== "object") return {};
+  const normalized = {};
+  Object.entries(value).forEach(([subject, grade]) => {
+    const subjectCode = String(subject || "").trim().toUpperCase();
+    const normalizedGrade = String(grade || "").trim().toUpperCase();
+    if (!subjectCode || !normalizedGrade) return;
+    normalized[subjectCode] = normalizedGrade;
+  });
+  return normalized;
+};
+
+export const fetchAllClusterSessions = async () => {
+  const app = requireFirebaseApp();
+  const db = getDatabase(app);
+
+  try {
+    const snapshot = await get(ref(db, sessionsPath));
+    if (!snapshot.exists()) return [];
+
+    return Object.entries(snapshot.val() || {})
+      .map(([code, value]) => {
+        const sessionCode = normalizeSessionCode(code);
+        const payload = value && typeof value === "object" ? value : {};
+        const createdAt = String(payload.createdAt || "");
+
+        return {
+          code: sessionCode,
+          email: String(payload.email || "").trim(),
+          phoneNumber: String(payload.phoneNumber || "").trim(),
+          amountPaid: Number(payload.amountPaid ?? 0),
+          createdAt,
+          updatedAt: String(payload.updatedAt || ""),
+          medicineEligible: Boolean(payload.medicineEligible),
+          grades: normalizeSessionGrades(payload.grades),
+          results: normalizeSessionResults(payload.results),
+          paymentResponse: payload.paymentResponse || null,
+          storage: "firebase",
+        };
+      })
+      .filter((session) => session.code)
+      .sort((a, b) => {
+        const first = Date.parse(a.createdAt || "") || 0;
+        const second = Date.parse(b.createdAt || "") || 0;
+        return second - first;
+      });
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to load calculated sessions from Firebase."));
+  }
+};
+
+export const updateClusterSessionByCode = async (code, patch = {}) => {
+  const normalizedCode = normalizeSessionCode(code);
+  if (!normalizedCode) {
+    throw new Error("Session code is required.");
+  }
+  if (!patch || typeof patch !== "object") {
+    throw new Error("Invalid session patch payload.");
+  }
+
+  const app = requireFirebaseApp();
+  const db = getDatabase(app);
+  const sessionRef = ref(db, `${sessionsPath}/${normalizedCode}`);
+
+  let snapshot;
+  try {
+    snapshot = await get(sessionRef);
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to load session before update."));
+  }
+  if (!snapshot.exists()) {
+    throw new Error("Session not found.");
+  }
+
+  const payload = {};
+  if ("email" in patch) payload.email = String(patch.email || "").trim();
+  if ("phoneNumber" in patch) payload.phoneNumber = String(patch.phoneNumber || "").trim();
+  if ("medicineEligible" in patch) payload.medicineEligible = Boolean(patch.medicineEligible);
+  if ("grades" in patch) payload.grades = normalizeSessionGrades(patch.grades);
+  if ("results" in patch) payload.results = normalizeSessionResults(patch.results);
+  if ("paymentResponse" in patch) payload.paymentResponse = patch.paymentResponse ?? null;
+  if ("amountPaid" in patch) {
+    const amount = Number(patch.amountPaid ?? 0);
+    if (!Number.isFinite(amount) || amount < 0) {
+      throw new Error("Amount paid must be a valid number equal to or greater than 0.");
+    }
+    payload.amountPaid = amount;
+  }
+  payload.updatedAt = new Date().toISOString();
+
+  try {
+    await update(sessionRef, payload);
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to update session."));
+  }
+};
+
+export const deleteClusterSessionByCode = async (code) => {
+  const normalizedCode = normalizeSessionCode(code);
+  if (!normalizedCode) {
+    throw new Error("Session code is required.");
+  }
+
+  const app = requireFirebaseApp();
+  const db = getDatabase(app);
+  try {
+    await remove(ref(db, `${sessionsPath}/${normalizedCode}`));
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to delete session."));
+  }
+};
+
+export const deleteClusterSessionsByCodes = async (codes = []) => {
+  const normalizedCodes = Array.from(
+    new Set(
+      (Array.isArray(codes) ? codes : [])
+        .map((code) => normalizeSessionCode(code))
+        .filter(Boolean),
+    ),
+  );
+
+  if (!normalizedCodes.length) return 0;
+
+  const app = requireFirebaseApp();
+  const db = getDatabase(app);
+  const payload = {};
+  normalizedCodes.forEach((code) => {
+    payload[`${sessionsPath}/${code}`] = null;
+  });
+
+  try {
+    await update(ref(db), payload);
+    return normalizedCodes.length;
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to delete selected sessions."));
+  }
+};
+
 export const uploadCourseCatalog = async (catalog) => {
   if (!catalog || typeof catalog !== "object") {
     throw new Error("Invalid course catalog payload.");
@@ -318,6 +502,64 @@ export const uploadCourseCatalog = async (catalog) => {
   } catch (error) {
     throw new Error(normalizeFirebaseError(error, "Unable to upload course catalog to Firebase."));
   }
+};
+
+export const upsertSingleCourseCatalogEntry = async ({ cluster, name, requirements, universities }) => {
+  const normalizedCluster = Number(cluster);
+  if (!Number.isInteger(normalizedCluster) || normalizedCluster < 1) {
+    throw new Error("Cluster must be a positive whole number.");
+  }
+
+  const normalizedName = String(name || "").trim();
+  if (!normalizedName) {
+    throw new Error("Course name is required.");
+  }
+
+  const normalizedRequirements = normalizeRequirementsMap(requirements);
+  const normalizedUniversities = toUniversitiesArray(universities)
+    .map((entry) => normalizeUniversityEntry(entry))
+    .filter(Boolean);
+
+  if (!normalizedUniversities.length) {
+    throw new Error("At least one university entry is required.");
+  }
+
+  const catalog = await fetchCourseCatalog();
+  const clusterCourses = Array.isArray(catalog[normalizedCluster]) ? [...catalog[normalizedCluster]] : [];
+  const existingIndex = clusterCourses.findIndex(
+    (course) => String(course?.name || "").trim().toLowerCase() === normalizedName.toLowerCase(),
+  );
+
+  const mergedCourse =
+    existingIndex >= 0
+      ? {
+          name: normalizedName,
+          requirements: {
+            ...normalizeRequirementsMap(clusterCourses[existingIndex]?.requirements),
+            ...normalizedRequirements,
+          },
+          universities: mergeUniversityEntries(clusterCourses[existingIndex]?.universities, normalizedUniversities),
+        }
+      : {
+          name: normalizedName,
+          requirements: normalizedRequirements,
+          universities: normalizedUniversities,
+        };
+
+  if (existingIndex >= 0) clusterCourses[existingIndex] = mergedCourse;
+  else clusterCourses.push(mergedCourse);
+
+  catalog[normalizedCluster] = clusterCourses;
+
+  const app = requireFirebaseApp();
+  const db = getDatabase(app);
+  try {
+    await set(ref(db, courseCatalogPath), catalog);
+  } catch (error) {
+    throw new Error(normalizeFirebaseError(error, "Unable to save course entry to Firebase."));
+  }
+
+  return mergedCourse;
 };
 
 export const fetchAdminProfile = async (uid) => {

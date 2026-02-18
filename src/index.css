@@ -25,3 +25,25 @@ body {
     radial-gradient(circle at 60% 90%, rgb(5 150 105 / 10%), transparent 40%),
     linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
+
+@layer components {
+  .ui-input {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  .ui-select {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 shadow-sm transition focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  .ui-textarea {
+    @apply block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  .ui-checkbox {
+    @apply h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-2 focus:ring-cyan-200 focus:ring-offset-0;
+  }
+
+  .ui-file-input {
+    @apply block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border file:border-slate-200 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white file:transition hover:file:bg-slate-800;
+  }
+}

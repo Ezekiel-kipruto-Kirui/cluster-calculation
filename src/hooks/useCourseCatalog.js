@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { fetchCourseCatalog, uploadCourseCatalog } from "../lib/realtimeDb";
+import { fetchCourseCatalog, uploadCourseCatalog, upsertSingleCourseCatalogEntry } from "../lib/realtimeDb";
 
 export const useCourseCatalog = () => {
   const [courseCatalog, setCourseCatalog] = useState({});
@@ -29,6 +29,15 @@ export const useCourseCatalog = () => {
     [loadCatalog],
   );
 
+  const saveSingleCourse = useCallback(
+    async (coursePayload) => {
+      await upsertSingleCourseCatalogEntry(coursePayload);
+      setCourseCatalogError("");
+      await loadCatalog();
+    },
+    [loadCatalog],
+  );
+
   useEffect(() => {
     loadCatalog().catch(() => {
       // loadCatalog updates user-facing error state.
@@ -41,6 +50,6 @@ export const useCourseCatalog = () => {
     courseCatalogError,
     loadCatalog,
     saveCatalog,
+    saveSingleCourse,
   };
 };
-

@@ -114,7 +114,7 @@ export default function PaymentPage({ pendingGrades, onCalculationReady, payable
             onChange={(event) => setPhoneNumber(event.target.value)}
             placeholder="0712345678"
             required
-            className="block w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+            className="ui-input"
           />
         </div>
 
@@ -129,7 +129,7 @@ export default function PaymentPage({ pendingGrades, onCalculationReady, payable
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
             required
-            className="block w-full rounded-lg border-slate-300 text-slate-900 shadow-sm focus:border-slate-500 focus:ring-slate-500"
+            className="ui-input"
           />
         </div>
 
@@ -146,4 +146,3 @@ export default function PaymentPage({ pendingGrades, onCalculationReady, payable
     </section>
   );
 }
-

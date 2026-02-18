@@ -9,6 +9,7 @@ import { fetchClusterSessionByCode, isFirebaseReady } from "./lib/realtimeDb";
 import { useCourseCatalog } from "./hooks/useCourseCatalog";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminPage from "./pages/AdminPage";
+import AdminSessionsPage from "./pages/AdminSessionsPage";
 import CalculatorPage from "./pages/CalculatorPage";
 import CourseResultPage from "./pages/CourseResultPage";
 import LandingPage from "./pages/LandingPage";
@@ -27,7 +28,7 @@ export default function App() {
 
   const firebaseConfigured = useMemo(() => isFirebaseReady(), []);
 
-  const { courseCatalog, catalogLoading, courseCatalogError, saveCatalog } = useCourseCatalog();
+  const { courseCatalog, catalogLoading, courseCatalogError, saveCatalog, saveSingleCourse } = useCourseCatalog();
   const {
     adminUser,
     adminProfile,
@@ -65,6 +66,13 @@ export default function App() {
     [saveCatalog],
   );
 
+  const handleSingleCourseSave = useCallback(
+    async (coursePayload) => {
+      await saveSingleCourse(coursePayload);
+    },
+    [saveSingleCourse],
+  );
+
   const handleAdminLogin = useCallback(
     async (email, password) => {
       const response = await login(email, password);
@@ -76,6 +84,21 @@ export default function App() {
   const handleAdminLogout = useCallback(async () => {
     await logout();
   }, [logout]);
+
+  const renderAdminProtected = useCallback(
+    (element) => {
+      if (authLoading) {
+        return (
+          <section className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <AlertMessage tone="info" message="Checking admin authentication..." />
+          </section>
+        );
+      }
+      if (!isAdminAuthenticated) return <Navigate to="/admin/login" replace />;
+      return element;
+    },
+    [authLoading, isAdminAuthenticated],
+  );
 
   return (
     <AppLayout>
@@ -94,25 +117,23 @@ export default function App() {
         />
         <Route
           path="/admin"
-          element={
-            authLoading ? (
-              <section className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <AlertMessage tone="info" message="Checking admin authentication..." />
-              </section>
-            ) : isAdminAuthenticated ? (
-              <AdminPage
-                firebaseConfigured={firebaseConfigured}
-                onUploadCatalog={handleCatalogUpload}
-                onLogout={handleAdminLogout}
-                onAddRegularAdmin={addRegularAdmin}
-                adminProfile={adminProfile}
-                adminEmail={adminUser?.email || ""}
-                authError={authError}
-              />
-            ) : (
-              <Navigate to="/admin/login" replace />
-            )
-          }
+          element={renderAdminProtected(
+            <AdminPage
+              firebaseConfigured={firebaseConfigured}
+              onUploadCatalog={handleCatalogUpload}
+              onAddSingleCourse={handleSingleCourseSave}
+              onLogout={handleAdminLogout}
+              onAddRegularAdmin={addRegularAdmin}
+              adminProfile={adminProfile}
+              adminEmail={adminUser?.email || ""}
+              authError={authError}
+              courseCatalog={courseCatalog}
+            />,
+          )}
+        />
+        <Route
+          path="/admin/sessions"
+          element={renderAdminProtected(<AdminSessionsPage firebaseConfigured={firebaseConfigured} />)}
         />
         <Route
           path="/calculator"

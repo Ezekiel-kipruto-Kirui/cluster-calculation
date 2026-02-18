@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 const navLinks = [
   { path: "/", label: "Home" },
   { path: "/calculator", label: "Calculator" },
-  { path: "/admin", label: "Admin" },
+  { path: "/admin", label: "Login" },
 ];
 
 export default function AppLayout({ children }) {

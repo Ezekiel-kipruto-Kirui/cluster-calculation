@@ -76,7 +76,7 @@ export default function CsvUploadPanel({ firebaseConfigured, onUploadCatalog, bu
             type="file"
             accept=".csv,text/csv"
             onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
-            className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
+            className="ui-file-input"
           />
         </div>
         <button
@@ -102,4 +102,3 @@ export default function CsvUploadPanel({ firebaseConfigured, onUploadCatalog, bu
     </section>
   );
 }
-
