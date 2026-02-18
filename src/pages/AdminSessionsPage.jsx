@@ -1,5 +1,17 @@
 ﻿import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  ArrowLeft,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Square,
+  Trash2,
+  X,
+} from "lucide-react";
 import AlertMessage from "../components/common/AlertMessage";
 import {
   deleteClusterSessionByCode,
@@ -293,21 +305,23 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
             </p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900">Calculated Users Table</h1>
             <p className="mt-2 text-sm text-slate-600">
-              Review users who calculated cluster points, edit records, and manage deletion safely.
+              Review users who calculated cluster points and manage records safely.
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => loadSessions()}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
             >
+              <RefreshCw className="h-4 w-4" />
               Refresh
             </button>
             <Link
               to="/admin"
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-slate-600"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-slate-600"
             >
+              <ArrowLeft className="h-4 w-4" />
               Back to Admin
             </Link>
           </div>
@@ -344,16 +358,18 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
               type="button"
               onClick={toggleSelectAllCurrentPage}
               disabled={!currentPageCodes.length}
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
             >
+              {allCurrentPageSelected ? <Square className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
               {allCurrentPageSelected ? "Unselect Page" : "Select Page"}
             </button>
             <button
               type="button"
               onClick={handleDeleteSelected}
               disabled={!selectedCodes.length || bulkDeleting}
-              className="inline-flex items-center justify-center rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-400"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition enabled:hover:bg-rose-500 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
+              <Trash2 className="h-4 w-4" />
               {bulkDeleting ? "Deleting..." : `Delete Selected (${selectedCodes.length})`}
             </button>
           </div>
@@ -450,23 +466,18 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
                           <button
                             type="button"
                             onClick={() => setExpandedCode((current) => (current === session.code ? "" : session.code))}
-                            className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                            className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                           >
+                            {expandedCode === session.code ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                             {expandedCode === session.code ? "Hide" : "View"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openEdit(session)}
-                            className="inline-flex items-center justify-center rounded-lg border border-cyan-300 bg-cyan-50 px-2.5 py-1.5 text-xs font-semibold text-cyan-700 transition hover:bg-cyan-100"
-                          >
-                            Edit
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteOne(session.code)}
                             disabled={deletingRow}
-                            className="inline-flex items-center justify-center rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition enabled:hover:bg-rose-100 disabled:cursor-not-allowed disabled:text-rose-400"
+                            className="inline-flex items-center justify-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition enabled:hover:bg-rose-100 disabled:cursor-not-allowed disabled:text-rose-400"
                           >
+                            <Trash2 className="h-3.5 w-3.5" />
                             {deletingRow ? "Deleting..." : "Delete"}
                           </button>
                         </div>
@@ -538,8 +549,9 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
               type="button"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage <= 1}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
             >
+              <ChevronLeft className="h-4 w-4" />
               Prev
             </button>
             {visiblePages.map((page) => (
@@ -560,9 +572,10 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
               type="button"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage >= totalPages}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              className="inline-flex items-center justify-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
             >
               Next
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -631,15 +644,17 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
                   type="button"
                   onClick={closeEdit}
                   disabled={editing}
-                  className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                 >
+                  <X className="h-4 w-4" />
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={editing}
-                  className="inline-flex items-center justify-center rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition enabled:hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-400"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition enabled:hover:bg-cyan-500 disabled:cursor-not-allowed disabled:bg-slate-400"
                 >
+                  <CheckSquare className="h-4 w-4" />
                   {editing ? "Saving..." : "Save Changes"}
                 </button>
               </div>
@@ -650,4 +665,3 @@ export default function AdminSessionsPage({ firebaseConfigured }) {
     </section>
   );
 }
-

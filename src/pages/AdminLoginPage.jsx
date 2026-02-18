@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import AlertMessage from "../components/common/AlertMessage";
 
-export default function AdminLoginPage({ isAuthenticated, onLogin, authError, isLoading }) {
+export default function AdminLoginPage({ isAuthenticated, onLogin, onGoogleLogin, authError, isLoading }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
   if (isAuthenticated) return <Navigate to="/admin" replace />;
@@ -19,6 +20,16 @@ export default function AdminLoginPage({ isAuthenticated, onLogin, authError, is
       return;
     }
     setError(response.error || "Invalid admin credentials.");
+  };
+
+  const continueWithGoogle = async () => {
+    setError("");
+    const response = await onGoogleLogin();
+    if (response.success) {
+      navigate("/admin");
+      return;
+    }
+    setError(response.error || "Google sign-in failed.");
   };
 
   return (
@@ -45,14 +56,23 @@ export default function AdminLoginPage({ isAuthenticated, onLogin, authError, is
           <label htmlFor="admin_password" className="mb-1 block text-sm font-medium text-slate-700">
             Password
           </label>
-          <input
-            id="admin_password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-            className="ui-input"
-          />
+          <div className="relative">
+            <input
+              id="admin_password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              className="ui-input pr-20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              {showPassword ? "Hide" : "View"}
+            </button>
+          </div>
         </div>
 
         <AlertMessage tone="danger" message={error} />
@@ -64,6 +84,24 @@ export default function AdminLoginPage({ isAuthenticated, onLogin, authError, is
           className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-slate-900 to-slate-700 px-4 py-2 text-sm font-semibold text-white transition hover:from-slate-800 hover:to-slate-700"
         >
           {isLoading ? "Signing in..." : "Login"}
+        </button>
+
+        <div className="relative py-1">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-200" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-white px-2 text-xs text-slate-500">OR</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={continueWithGoogle}
+          disabled={isLoading}
+          className="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+        >
+          Continue with Google
         </button>
       </form>
     </section>

@@ -37,6 +37,7 @@ export default function App() {
     authError,
     isAdminAuthenticated,
     login,
+    loginWithGoogle,
     logout,
     addRegularAdmin,
   } = useAdminAuth();
@@ -81,6 +82,11 @@ export default function App() {
     [login],
   );
 
+  const handleAdminGoogleLogin = useCallback(async () => {
+    const response = await loginWithGoogle();
+    return response;
+  }, [loginWithGoogle]);
+
   const handleAdminLogout = useCallback(async () => {
     await logout();
   }, [logout]);
@@ -110,6 +116,7 @@ export default function App() {
             <AdminLoginPage
               isAuthenticated={isAdminAuthenticated}
               onLogin={handleAdminLogin}
+              onGoogleLogin={handleAdminGoogleLogin}
               authError={authError}
               isLoading={authWorking || authLoading}
             />

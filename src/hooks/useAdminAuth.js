@@ -4,6 +4,7 @@ import {
   createRegularAdminAuthUser,
   isFirebaseAuthReady,
   signInAdminWithEmailPassword,
+  signInAdminWithGooglePopup,
   signOutAdminSession,
   subscribeToAdminAuthState,
 } from "../lib/firebaseAuth";
@@ -16,6 +17,10 @@ const parseAuthError = (error) => {
   if (code.includes("wrong-password")) return "Invalid email or password.";
   if (code.includes("email-already-in-use")) return "Email is already registered.";
   if (code.includes("weak-password")) return "Password must be at least 6 characters.";
+  if (code.includes("popup-closed-by-user")) return "Google sign-in was canceled.";
+  if (code.includes("popup-blocked")) return "Popup blocked. Allow popups and try again.";
+  if (code.includes("unauthorized-domain")) return "This domain is not authorized in Firebase Authentication.";
+  if (code.includes("operation-not-allowed")) return "Google sign-in is not enabled for this Firebase project.";
   if (code.includes("configuration-not-found")) {
     return "Firebase Auth provider is not configured. Enable Email/Password sign-in in Firebase Console.";
   }
@@ -106,6 +111,21 @@ export const useAdminAuth = () => {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async () => {
+    setAuthWorking(true);
+    setAuthError("");
+    try {
+      await signInAdminWithGooglePopup();
+      return { success: true, error: "" };
+    } catch (error) {
+      const message = parseAuthError(error);
+      setAuthError(message);
+      return { success: false, error: message };
+    } finally {
+      setAuthWorking(false);
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     setAuthWorking(true);
     try {
@@ -155,8 +175,8 @@ export const useAdminAuth = () => {
     authError,
     isAdminAuthenticated: Boolean(adminUser && adminProfile),
     login,
+    loginWithGoogle,
     logout,
     addRegularAdmin,
   };
 };
-

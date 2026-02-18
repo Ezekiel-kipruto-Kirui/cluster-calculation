@@ -1,8 +1,10 @@
 import { deleteApp, getApp, getApps, initializeApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   getAuth,
   onAuthStateChanged,
+  signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -39,6 +41,14 @@ export const subscribeToAdminAuthState = (callback) => onAuthStateChanged(requir
 export const signInAdminWithEmailPassword = async ({ email, password }) => {
   const auth = requirePrimaryAuth();
   const credential = await signInWithEmailAndPassword(auth, String(email || "").trim(), String(password || ""));
+  return credential.user;
+};
+
+export const signInAdminWithGooglePopup = async () => {
+  const auth = requirePrimaryAuth();
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  const credential = await signInWithPopup(auth, provider);
   return credential.user;
 };
 
@@ -80,4 +90,3 @@ export const createRegularAdminAuthUser = async ({ email, password, displayName 
     await deleteApp(secondaryApp);
   }
 };
-
