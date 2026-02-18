@@ -3,13 +3,15 @@ import { computeAllClusters, medicineEligibility } from "./clusterEngine";
 const withNoTrailingSlash = (value) => (value || "").replace(/\/+$/, "");
 
 const djangoApiBaseUrl = withNoTrailingSlash(import.meta.env.VITE_DJANGO_API_BASE_URL);
-const defaultEmailEndpoint = "http://127.0.0.1:8080/api/daraja-emails/send-email/";
+const darajaEndpoint = (
+  import.meta.env.VITE_DJANGO_DARAJA_URL ||
+  (djangoApiBaseUrl ? `${djangoApiBaseUrl}/api/daraja-emails/stk-push/` : "")
+).trim();
 
-const darajaEndpoint = (import.meta.env.VITE_DJANGO_DARAJA_URL || "").trim();
-
-const emailEndpoint =
+const emailEndpoint = (
   import.meta.env.VITE_DJANGO_EMAIL_URL ||
-  (djangoApiBaseUrl ? `${djangoApiBaseUrl}/api/daraja-emails/send-email/` : defaultEmailEndpoint);
+  (djangoApiBaseUrl ? `${djangoApiBaseUrl}/api/daraja-emails/send-email/` : "")
+).trim();
 
 const parseResponseBody = async (response) => {
   try {
