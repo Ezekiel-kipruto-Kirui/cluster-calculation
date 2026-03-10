@@ -1,4 +1,13 @@
 export const GRADE_OPTIONS = ["A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "D-", "E"];
 
-export const PAYABLE_AMOUNT = 1;
+const parseNumberEnv = (value: string, fallback: number) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const rawPayableAmount = String(
+  import.meta.env.PAYABLE_AMOUNT || import.meta.env.VITE_PAYABLE_AMOUNT || "",
+).trim();
+
+export const PAYABLE_AMOUNT = parseNumberEnv(rawPayableAmount, 0);
 export const SUPER_ADMIN_EMAIL = "";
