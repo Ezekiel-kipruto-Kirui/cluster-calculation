@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import AppLayout from "./components/layout/AppLayout";
 import AlertMessage from "./components/common/AlertMessage";
 import { GRADE_OPTIONS, PAYABLE_AMOUNT } from "./config/appConfig";
 import { useAdminAuth } from "./hooks/useAdminAuth";
 import { SUBJECTS } from "./lib/clusterEngine";
-import { fetchClusterSessionByCode, isFirebaseReady } from "./lib/realtimeDb";
+import { fetchClusterSessionByCode, isFirebaseReady, syncLocalSessionsToBackend } from "./lib/realtimeDb";
 import { useCourseCatalog } from "./hooks/useCourseCatalog";
 import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminPage from "./pages/AdminPage";
@@ -28,6 +28,10 @@ export default function App() {
   const firebaseConfigured = useMemo(() => isFirebaseReady(), []);
 
   const isAdminRoute = location.pathname.startsWith("/admin");
+
+  useEffect(() => {
+    syncLocalSessionsToBackend().catch(() => {});
+  }, []);
 
   const { courseCatalog, catalogLoading, courseCatalogError, saveCatalog, saveSingleCourse } = useCourseCatalog({
     mode: isAdminRoute ? "admin" : "public",

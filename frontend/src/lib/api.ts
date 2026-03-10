@@ -121,7 +121,7 @@ export const sendServiceEmail = async (payload: { email: string; subject: string
     throw new Error("Email, subject and message are required.");
   }
 
-  const query = new URLSearchParams({ email, subject, message }).toString();
+  const urlEncodedBody = new URLSearchParams({ email, subject, message }).toString();
   const attempts = [
     {
       url: endpoints.email,
@@ -129,9 +129,9 @@ export const sendServiceEmail = async (payload: { email: string; subject: string
       body: JSON.stringify({ email, subject, message }),
     },
     {
-      url: `${endpoints.email}${endpoints.email.includes("?") ? "&" : "?"}${query}`,
-      headers: {},
-      body: undefined,
+      url: endpoints.email,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: urlEncodedBody,
     },
   ];
 

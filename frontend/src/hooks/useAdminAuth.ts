@@ -88,7 +88,10 @@ export const useAdminAuth = ({ enabled = true }: UseAdminAuthOptions = {}) => {
       });
       const payload = await parseResponseBody(response);
       if (!response.ok) {
-        const message = extractErrorMessage(payload, "Authentication request failed.");
+        const message =
+          response.status === 404
+            ? "Admin login endpoint not found. Check VITE_API_BASE_URL or backend routes."
+            : extractErrorMessage(payload, "Authentication request failed.");
         setAuthError(message);
         return { success: false, error: message };
       }

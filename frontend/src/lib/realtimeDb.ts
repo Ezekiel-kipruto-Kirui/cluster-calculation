@@ -257,6 +257,7 @@ export const upsertSingleCourseCatalogEntry = async ({
 };
 
 export const saveClusterSession = async ({
+  code,
   email,
   phoneNumber,
   amountPaid,
@@ -265,6 +266,7 @@ export const saveClusterSession = async ({
   medicineEligible,
   paymentResponse,
 }: {
+  code?: string;
   email: string;
   phoneNumber: string;
   amountPaid: number;
@@ -273,7 +275,7 @@ export const saveClusterSession = async ({
   medicineEligible: boolean;
   paymentResponse: any;
 }): Promise<ClusterSessionPayload> => {
-  const result = await postRequest(apiRoutes.sessions, {
+  const payload: any = {
     email,
     phoneNumber,
     amountPaid,
@@ -281,7 +283,10 @@ export const saveClusterSession = async ({
     results,
     medicineEligible,
     paymentResponse,
-  });
+  };
+  if (code) payload.code = code;
+
+  const result = await postRequest(apiRoutes.sessions, payload);
   if (!result.ok) {
     throw new Error(extractErrorMessage(result, "Unable to save session to backend."));
   }
@@ -302,6 +307,44 @@ export const saveClusterSession = async ({
   };
 };
 
+export const syncLocalSessionsToBackend = async (): Promise<number> => {
+  const localSessions = getLocalSessionsMap();
+  const entries = Object.entries(localSessions);
+  if (!entries.length) return 0;
+
+  let synced = 0;
+  const remaining: Record<string, ClusterSessionPayload> = { ...localSessions };
+
+  for (const [code, session] of entries) {
+    try {
+      const payload = {
+        code: normalizeSessionCode(session.code || code),
+        email: String(session.email || "").trim(),
+        phoneNumber: String(session.phoneNumber || "").trim(),
+        amountPaid: Number(session.amountPaid ?? 0),
+        grades: session.grades || {},
+        results: session.results || {},
+        medicineEligible: Boolean(session.medicineEligible),
+        paymentResponse: session.paymentResponse || null,
+      };
+      const result = await postRequest(apiRoutes.sessions, payload);
+      if (!result.ok) {
+        throw new Error(extractErrorMessage(result, "Unable to sync session to backend."));
+      }
+      delete remaining[code];
+      synced += 1;
+    } catch {
+      // Keep the local copy for a later retry.
+    }
+  }
+
+  if (synced > 0) {
+    setLocalSessionsMap(remaining);
+  }
+
+  return synced;
+};
+
 export const saveClusterSessionWithFallback = async (payload: {
   email: string;
   phoneNumber: string;
@@ -313,6 +356,7 @@ export const saveClusterSessionWithFallback = async (payload: {
 }): Promise<{ session: ClusterSessionPayload; storage: "firebase" | "local"; warning: string }> => {
   try {
     const session = await saveClusterSession(payload);
+    syncLocalSessionsToBackend().catch(() => {});
     return { session, storage: "firebase", warning: "" };
   } catch (error: any) {
     const timestamp = new Date().toISOString();
