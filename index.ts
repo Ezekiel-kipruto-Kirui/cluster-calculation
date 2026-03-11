@@ -54,7 +54,7 @@ const parseNumberEnv = (value: string, fallback: number) => {
 const sessionsPath = firstEnv("REALTIME_SESSIONS_PATH", "VITE_REALTIME_SESSIONS_PATH") || "clusterSessions";
 const courseCatalogPath = firstEnv("REALTIME_COURSES_PATH", "VITE_REALTIME_COURSES_PATH") || "courses";
 const adminsPath = firstEnv("REALTIME_ADMINS_PATH", "VITE_REALTIME_ADMINS_PATH") || "admins";
-const payableAmount = parseNumberEnv(getEnv("PAYABLE_AMOUNT"), 150);
+const payableAmount = parseNumberEnv(getEnv("PAYABLE_AMOUNT"), 0);
 const superAdminEmail = firstEnv("SUPER_ADMIN_EMAIL", "VITE_SUPER_ADMIN_EMAIL").toLowerCase();
 const normalizeOrigin = (value: string) => String(value || "").trim().replace(/\/+$/, "");
 const rawCorsOrigins = (firstEnv("CORS_ORIGIN", "LOCAL_CORS_ORIGIN", "FRONTEND_ORIGIN") || "*").trim() || "*";
@@ -153,13 +153,6 @@ const buildFirebaseRealtimeUrl = (dbPath = ""): string => {
   return url.toString();
 };
 
-const buildFirebaseRealtimeUrlForLog = (dbPath = ""): string => {
-  const normalizedPath = normalizeRealtimePath(dbPath);
-  const base = getFirebaseDatabaseUrl();
-  const pathname = normalizedPath ? `${normalizedPath}.json` : ".json";
-  return `${base}/${pathname}`;
-};
-
 const firebaseRealtimeRequest = async ({
   method,
   dbPath = "",
@@ -182,18 +175,7 @@ const firebaseRealtimeRequest = async ({
 
   const payload: any = await response.json().catch(() => null);
   if (!response.ok) {
-    let message = String(
-      payload?.error || payload?.message || `Firebase Realtime Database error (${response.status}).`,
-    );
-    if (response.status === 404 && /not found/i.test(message)) {
-      message = `Firebase Realtime Database returned 404. Check FIREBASE_DATABASE_URL, auth token, and paths. (${buildFirebaseRealtimeUrlForLog(
-        dbPath,
-      )})`;
-    } else if (response.status === 401 || response.status === 403) {
-      message = `Firebase Realtime Database access denied (${response.status}). Check FIREBASE_DATABASE_AUTH_TOKEN / rules. (${buildFirebaseRealtimeUrlForLog(
-        dbPath,
-      )})`;
-    }
+    const message = String(payload?.error || payload?.message || `Firebase Realtime Database error (${response.status}).`);
     const requestError: any = new Error(message);
     requestError.statusCode = response.status;
     throw requestError;
@@ -471,16 +453,16 @@ const toUniversitiesArray = (universitiesValue: any): { name: string; cutoff: nu
     .filter((entry) => Boolean(entry.name));
 };
 
-const normalizeCourse = (rawCourse: any, fallbackName = "", cluster = 0): NormalizedCourse => ({
+const normalizeCourse = (rawCourse: any, fallbackName = ""): NormalizedCourse => ({
   name: String(rawCourse?.name || fallbackName).trim(),
-  requirements: normalizeRequirementsMap(rawCourse?.requirements, cluster),
+  requirements: toRequirementsObject(rawCourse?.requirements),
   universities: toUniversitiesArray(rawCourse?.universities),
 });
 
-const normalizeClusterValue = (clusterValue: any, cluster = 0): NormalizedCourse[] => {
+const normalizeClusterValue = (clusterValue: any): NormalizedCourse[] => {
   const items = Array.isArray(clusterValue) ? clusterValue : Object.values(clusterValue || {});
   return items
-    .map((entry) => normalizeCourse(entry, "", cluster))
+    .map((entry) => normalizeCourse(entry))
     .filter((course) => Boolean(course.name));
 };
 
@@ -496,7 +478,7 @@ const normalizeCourseCatalog = (raw: any): NormalizedCatalog => {
 
   if (looksLikeClusterMap) {
     rawEntries.forEach(([clusterKey, clusterValue]) => {
-      normalized[Number(clusterKey)] = normalizeClusterValue(clusterValue, Number(clusterKey));
+      normalized[Number(clusterKey)] = normalizeClusterValue(clusterValue);
     });
     return normalized;
   }
@@ -505,85 +487,21 @@ const normalizeCourseCatalog = (raw: any): NormalizedCatalog => {
     const cluster = Number((courseValue as any)?.cluster);
     if (!Number.isInteger(cluster) || cluster < 1) return;
     if (!normalized[cluster]) normalized[cluster] = [];
-    normalized[cluster].push(normalizeCourse(courseValue, courseKey, cluster));
+    normalized[cluster].push(normalizeCourse(courseValue, courseKey));
   });
 
   return normalized;
 };
 
-const GRADE_ORDER: Record<string, number> = {
-  A: 12,
-  "A-": 11,
-  "B+": 10,
-  B: 9,
-  "B-": 8,
-  "C+": 7,
-  C: 6,
-  "C-": 5,
-  "D+": 4,
-  D: 3,
-  "D-": 2,
-  E: 1,
-};
-
-const normalizeRequirementSubject = (subject: string) => subject.replace(/\s+/g, " ").trim();
-const subjectIsMath = (subject: string) => /^mathematics$|^math$/i.test(normalizeRequirementSubject(subject));
-const subjectIsPhysics = (subject: string) => /^physics$/i.test(normalizeRequirementSubject(subject));
-const subjectIsMathPhysics = (subject: string) =>
-  /^mathematics\s*\/\s*physics$|^physics\s*\/\s*mathematics$/i.test(normalizeRequirementSubject(subject));
-
-const pickHigherGrade = (first?: string, second?: string): string => {
-  const firstGrade = String(first || "").trim().toUpperCase();
-  const secondGrade = String(second || "").trim().toUpperCase();
-  if (!secondGrade) return firstGrade;
-  if (!firstGrade) return secondGrade;
-  return (GRADE_ORDER[secondGrade] || 0) > (GRADE_ORDER[firstGrade] || 0) ? secondGrade : firstGrade;
-};
-
-const normalizeMedicalClusterMathPhysics = (requirements: Record<string, string>, cluster: number) => {
-  if (cluster !== 13) return requirements;
-  let mathKey = "";
-  let physicsKey = "";
-  let mathPhysicsKey = "";
-  let combinedGrade = "";
-
-  Object.entries(requirements || {}).forEach(([subject, grade]) => {
-    if (!subject) return;
-    if (subjectIsMathPhysics(subject)) {
-      mathPhysicsKey = subject;
-      combinedGrade = pickHigherGrade(combinedGrade, grade);
-      return;
-    }
-    if (subjectIsMath(subject)) {
-      mathKey = subject;
-      combinedGrade = pickHigherGrade(combinedGrade, grade);
-      return;
-    }
-    if (subjectIsPhysics(subject)) {
-      physicsKey = subject;
-      combinedGrade = pickHigherGrade(combinedGrade, grade);
-    }
-  });
-
-  if (!combinedGrade) return requirements;
-
-  const normalized = { ...requirements };
-  if (mathKey) delete normalized[mathKey];
-  if (physicsKey) delete normalized[physicsKey];
-  if (mathPhysicsKey) delete normalized[mathPhysicsKey];
-  normalized["Mathematics/Physics"] = combinedGrade;
-  return normalized;
-};
-
-const normalizeRequirementsMap = (requirements: any, cluster = 0): Record<string, string> => {
+const normalizeRequirementsMap = (requirements: any): Record<string, string> => {
   const normalized: Record<string, string> = {};
   Object.entries(toRequirementsObject(requirements)).forEach(([subject, grade]) => {
-    const normalizedSubject = normalizeRequirementSubject(String(subject || "").trim());
+    const normalizedSubject = String(subject || "").trim();
     const normalizedGrade = String(grade || "").trim().toUpperCase();
     if (!normalizedSubject || !normalizedGrade) return;
     normalized[normalizedSubject] = normalizedGrade;
   });
-  return normalizeMedicalClusterMathPhysics(normalized, cluster);
+  return normalized;
 };
 
 const normalizeUniversityEntry = (entry: any): { name: string; courseCode: string; cutoff: number } | null => {
@@ -648,7 +566,7 @@ const upsertSingleCourseCatalogEntryInDb = async ({
     throw new Error("Course name is required.");
   }
 
-  const normalizedRequirements = normalizeRequirementsMap(requirements, normalizedCluster);
+  const normalizedRequirements = normalizeRequirementsMap(requirements);
   const normalizedUniversities = toUniversitiesArray(universities)
     .map((entry) => normalizeUniversityEntry(entry))
     .filter((entry): entry is { name: string; courseCode: string; cutoff: number } => Boolean(entry));
@@ -668,7 +586,7 @@ const upsertSingleCourseCatalogEntryInDb = async ({
       ? {
           name: normalizedName,
           requirements: {
-            ...normalizeRequirementsMap(clusterCourses[existingIndex]?.requirements, normalizedCluster),
+            ...normalizeRequirementsMap(clusterCourses[existingIndex]?.requirements),
             ...normalizedRequirements,
           },
           universities: mergeUniversityEntries(
@@ -2387,7 +2305,7 @@ const logHandlerAccess = (handlerName: string, request: express.Request & { requ
   });
 };
 
-export const createBackendServer = () => {
+const createBackendServer = () => {
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", true);
@@ -2451,21 +2369,11 @@ export const createBackendServer = () => {
   app.get("/admin/health", requireAdminSession, withAsyncGuard("adminHealthLegacy", adminHealthHandler));
   app.get("/api/admin/health", requireAdminSession, withAsyncGuard("adminHealth", adminHealthHandler));
 
-  const healthPayload = () => ({
-    status: "ok",
-    service: "kuccps-cluster-backend-server",
-    trackedPayments: paymentSessionsByCheckoutId.size,
-  });
-
   app.get("/health", (request, response) => {
     response.status(200).json({
-      ...healthPayload(),
-    });
-  });
-
-  app.get("/api/health", (request, response) => {
-    response.status(200).json({
-      ...healthPayload(),
+      status: "ok",
+      service: "kuccps-cluster-backend-server",
+      trackedPayments: paymentSessionsByCheckoutId.size,
     });
   });
 
@@ -2484,11 +2392,6 @@ export const createBackendServer = () => {
         "/calculateClusterPoints",
         "/sendEmail",
         "/api/sendEmail",
-        "/api/paymentStatus",
-        "/api/calculateClusterPoints",
-        "/api/stkPush",
-        "/api/callback",
-        "/api/darajaCallback",
         "/api/catalog",
         "/api/sessions/:code",
         "/api/admin/login",
@@ -2548,11 +2451,6 @@ export const createBackendServer = () => {
   app.all("/calculateClusterPoints", withAsyncGuard("calculateClusterPoints", calculateClusterPointsHandler));
   app.all("/sendEmail", withAsyncGuard("sendEmail", sendEmailHandler));
   app.all("/api/sendEmail", withAsyncGuard("sendEmailApi", sendEmailHandler));
-  app.all("/api/paymentStatus", withAsyncGuard("paymentStatusApi", paymentStatusHandler));
-  app.all("/api/calculateClusterPoints", withAsyncGuard("calculateClusterPointsApi", calculateClusterPointsHandler));
-  app.all("/api/stkPush", withAsyncGuard("stkPushApi", stkPushHandler));
-  app.all("/api/callback", withAsyncGuard("callbackApi", darajaCallbackHandler));
-  app.all("/api/darajaCallback", withAsyncGuard("darajaCallbackApi", darajaCallbackHandler));
 
   // Serve React build (Vite) when available.
   const frontendDistCandidates = [
@@ -2568,22 +2466,10 @@ export const createBackendServer = () => {
   );
   const indexHtmlPath = distPath ? path.join(distPath, "index.html") : "";
   if (distPath && indexHtmlPath) {
-    app.use(
-      express.static(distPath, {
-        setHeaders: (response, filePath) => {
-          if (path.basename(filePath) === "index.html") {
-            response.setHeader("Cache-Control", "no-store");
-          }
-        },
-      }),
-    );
+    app.use(express.static(distPath));
 
-    // SPA fallback - must come AFTER API routes but BEFORE the 404 handler.
+    // SPA fallback – must come AFTER API routes but BEFORE the 404 handler.
     app.get("*", (request, response, next) => {
-      if (path.extname(request.path)) {
-        return next();
-      }
-
       // Avoid intercepting API/utility routes that don't expect HTML.
       if (
         request.path.startsWith("/api/") ||
@@ -2677,16 +2563,11 @@ const startLocalServer = async ({
     tryListen(requestedPort, retries);
   });
 
-const app = createBackendServer();
-
-// Vercel expects a default export that is a function or server.
-export default app;
-module.exports = app;
-
 if (require.main === module) {
   const port = Number(getEnv("PORT", "5001")) || 5001;
   const host = getEnv("HOST", "0.0.0.0") || "0.0.0.0";
   const retries = Number(getEnv("PORT_RETRIES", "20")) || 20;
+  const app = createBackendServer();
 
   startLocalServer({ app, requestedPort: port, retries, host })
     .then(({ port: actualPort }) => {

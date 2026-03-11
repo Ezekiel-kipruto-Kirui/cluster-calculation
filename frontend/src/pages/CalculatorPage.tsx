@@ -252,7 +252,7 @@ export default function CalculatorPage({ onCalculationReady, payableAmount, grad
         <div className="grid gap-5 xl:grid-cols-2">
           {SUBJECT_GROUPS.map((group) => (
             <article key={group.title} className={cardClass}>
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900">{group.title}</h2>
                   <p className="mt-1 text-xs text-slate-500">

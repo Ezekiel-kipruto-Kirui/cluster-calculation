@@ -5,7 +5,7 @@ const endpoints = {
   darajaPayment: buildApiUrl("/api/payments"),
   darajaQuery: buildApiUrl("/api/payments/query"),
   email: buildApiUrl("/api/sendEmail"),
-  calculateCluster: buildApiUrl("/api/calculateClusterPoints"),
+  calculateCluster: buildApiUrl("/calculateClusterPoints"),
   adminHealth: buildApiUrl("/api/admin/health"),
 };
 

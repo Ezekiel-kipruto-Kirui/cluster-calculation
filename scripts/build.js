@@ -15,36 +15,6 @@ if (shouldSkipBuild()) {
 const rootDir = path.resolve(__dirname, "..");
 const frontendDir = path.join(rootDir, "frontend");
 
-const loadRootEnv = () => {
-  const envPath = path.join(rootDir, ".env");
-  if (!fs.existsSync(envPath)) return;
-  const raw = fs.readFileSync(envPath, "utf8");
-  raw.split(/\r?\n/).forEach((line) => {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) return;
-    const separatorIndex = trimmed.indexOf("=");
-    if (separatorIndex === -1) return;
-    const key = trimmed.slice(0, separatorIndex).trim();
-    if (!key) return;
-    let value = trimmed.slice(separatorIndex + 1).trim();
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    if (process.env[key] === undefined) {
-      process.env[key] = value;
-    }
-  });
-};
-
-loadRootEnv();
-
-if (!process.env.VITE_PAYABLE_AMOUNT && process.env.PAYABLE_AMOUNT) {
-  process.env.VITE_PAYABLE_AMOUNT = process.env.PAYABLE_AMOUNT;
-}
-
 const binExists = (baseDir, binName) => {
   const binDir = path.join(baseDir, "node_modules", ".bin");
   const candidates =

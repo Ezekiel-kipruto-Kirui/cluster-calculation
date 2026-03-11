@@ -32,21 +32,6 @@ const COLUMN_NAMES = {
 
 const normalizeText = (value: unknown): string => String(value ?? "").replace(/\u00a0/g, " ").trim();
 
-const GRADE_ORDER: Record<string, number> = {
-  A: 12,
-  "A-": 11,
-  "B+": 10,
-  B: 9,
-  "B-": 8,
-  "C+": 7,
-  C: 6,
-  "C-": 5,
-  "D+": 4,
-  D: 3,
-  "D-": 2,
-  E: 1,
-};
-
 const parseCutoff = (value: unknown): number => {
   const cleaned = normalizeText(value).replace(/,/g, "");
   if (!cleaned || cleaned === "-") return 0;
@@ -75,68 +60,19 @@ const parseRequirements = (value: unknown): CourseRequirement[] => {
   return requirements;
 };
 
-const normalizeRequirementSubject = (subject: string) => subject.replace(/\s+/g, " ").trim();
-
-const subjectIsMath = (subject: string) => /^mathematics$|^math$/i.test(normalizeRequirementSubject(subject));
-const subjectIsPhysics = (subject: string) => /^physics$/i.test(normalizeRequirementSubject(subject));
-const subjectIsMathPhysics = (subject: string) =>
-  /^mathematics\s*\/\s*physics$|^physics\s*\/\s*mathematics$/i.test(normalizeRequirementSubject(subject));
-
-const pickHigherGrade = (first?: string, second?: string): string => {
-  const firstGrade = String(first || "").trim().toUpperCase();
-  const secondGrade = String(second || "").trim().toUpperCase();
-  if (!secondGrade) return firstGrade;
-  if (!firstGrade) return secondGrade;
-  return (GRADE_ORDER[secondGrade] || 0) > (GRADE_ORDER[firstGrade] || 0) ? secondGrade : firstGrade;
+const normalizeClinicalMedicineSubject = (courseName: string, subject: string) => {
+  if (!subject) return subject;
+  if (String(courseName || "").trim().toUpperCase() !== "BACHELOR OF SCIENCE CLINICAL MEDICINE") return subject;
+  const normalized = subject.replace(/\s+/g, " ").trim();
+  if (/^mathematics\s*\/\s*physics$/i.test(normalized)) return "Mathematics";
+  return subject;
 };
 
-const normalizeMedicalClusterMathPhysics = (
-  requirements: CourseRequirement[] = [],
-  cluster: number,
-): CourseRequirement[] => {
-  if (cluster !== 13) return requirements;
-
-  let mathIndex = -1;
-  let physicsIndex = -1;
-  let mathPhysicsIndex = -1;
-  let combinedGrade = "";
-
-  requirements.forEach((entry, index) => {
-    if (!entry?.subject || !entry?.grade) return;
-    if (subjectIsMathPhysics(entry.subject)) {
-      mathPhysicsIndex = index;
-      combinedGrade = pickHigherGrade(combinedGrade, entry.grade);
-      return;
-    }
-    if (subjectIsMath(entry.subject)) {
-      mathIndex = index;
-      combinedGrade = pickHigherGrade(combinedGrade, entry.grade);
-      return;
-    }
-    if (subjectIsPhysics(entry.subject)) {
-      physicsIndex = index;
-      combinedGrade = pickHigherGrade(combinedGrade, entry.grade);
-    }
-  });
-
-  if (!combinedGrade) return requirements;
-
-  const filtered = requirements.filter((_entry, index) => {
-    if (index === mathPhysicsIndex) return false;
-    if (index === mathIndex) return false;
-    if (index === physicsIndex) return false;
-    return true;
-  });
-
-  filtered.push({ subject: "Mathematics/Physics", grade: combinedGrade });
-  return filtered;
-};
-
-const normalizeCourseRequirements = (courseName: string, cluster: number, requirements: CourseRequirement[] = []) => {
+const normalizeCourseRequirements = (courseName: string, requirements: CourseRequirement[] = []) => {
   const normalized: CourseRequirement[] = [];
   requirements.forEach((entry) => {
     if (!entry?.subject || !entry?.grade) return;
-    const subject = normalizeRequirementSubject(entry.subject);
+    const subject = normalizeClinicalMedicineSubject(courseName, entry.subject);
     if (!subject) return;
     const grade = String(entry.grade || "").trim().toUpperCase();
     if (!grade) return;
@@ -144,7 +80,7 @@ const normalizeCourseRequirements = (courseName: string, cluster: number, requir
     if (existingIndex >= 0) normalized[existingIndex] = { subject, grade };
     else normalized.push({ subject, grade });
   });
-  return normalizeMedicalClusterMathPhysics(normalized, cluster);
+  return normalized;
 };
 
 const mergeRequirements = (current: CourseRequirement[] = [], next: CourseRequirement[] = []): CourseRequirement[] => {
@@ -198,7 +134,7 @@ export const parseCourseCsvToCatalog = (csvText: string): Catalog => {
     if (!catalog[currentCourse.cluster]) catalog[currentCourse.cluster] = [];
     catalog[currentCourse.cluster].push({
       name: currentCourse.name,
-        requirements: normalizeCourseRequirements(currentCourse.name, currentCourse.cluster, currentCourse.requirements),
+      requirements: normalizeCourseRequirements(currentCourse.name, currentCourse.requirements),
       universities: dedupeUniversities(currentCourse.universities),
     });
     currentCourse = null;
