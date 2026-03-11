@@ -60,6 +60,29 @@ const parseRequirements = (value: unknown): CourseRequirement[] => {
   return requirements;
 };
 
+const normalizeClinicalMedicineSubject = (courseName: string, subject: string) => {
+  if (!subject) return subject;
+  if (String(courseName || "").trim().toUpperCase() !== "BACHELOR OF SCIENCE CLINICAL MEDICINE") return subject;
+  const normalized = subject.replace(/\s+/g, " ").trim();
+  if (/^mathematics\s*\/\s*physics$/i.test(normalized)) return "Mathematics";
+  return subject;
+};
+
+const normalizeCourseRequirements = (courseName: string, requirements: CourseRequirement[] = []) => {
+  const normalized: CourseRequirement[] = [];
+  requirements.forEach((entry) => {
+    if (!entry?.subject || !entry?.grade) return;
+    const subject = normalizeClinicalMedicineSubject(courseName, entry.subject);
+    if (!subject) return;
+    const grade = String(entry.grade || "").trim().toUpperCase();
+    if (!grade) return;
+    const existingIndex = normalized.findIndex((item) => item.subject === subject);
+    if (existingIndex >= 0) normalized[existingIndex] = { subject, grade };
+    else normalized.push({ subject, grade });
+  });
+  return normalized;
+};
+
 const mergeRequirements = (current: CourseRequirement[] = [], next: CourseRequirement[] = []): CourseRequirement[] => {
   const merged = [...current];
   next.forEach((item) => {
@@ -111,7 +134,7 @@ export const parseCourseCsvToCatalog = (csvText: string): Catalog => {
     if (!catalog[currentCourse.cluster]) catalog[currentCourse.cluster] = [];
     catalog[currentCourse.cluster].push({
       name: currentCourse.name,
-      requirements: currentCourse.requirements,
+      requirements: normalizeCourseRequirements(currentCourse.name, currentCourse.requirements),
       universities: dedupeUniversities(currentCourse.universities),
     });
     currentCourse = null;
@@ -180,4 +203,3 @@ export const summarizeCourseCatalog = (
 
   return { clusters, courses, universities };
 };
-

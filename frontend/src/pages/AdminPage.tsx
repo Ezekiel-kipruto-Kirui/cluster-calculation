@@ -32,6 +32,20 @@ const parseRequirementsInput = (value: string): Record<string, string> => {
   return requirements;
 };
 
+const formatRequirements = (requirements: Record<string, string>) => {
+  const entries = Object.entries(requirements || {});
+  if (!entries.length) return "None";
+  return entries
+    .map(([subject, grade]) => ({
+      subject: String(subject || "").trim(),
+      grade: String(grade || "").trim().toUpperCase(),
+    }))
+    .filter((entry) => entry.subject && entry.grade)
+    .sort((a, b) => a.subject.localeCompare(b.subject))
+    .map((entry) => `${entry.subject}: ${entry.grade}`)
+    .join(", ");
+};
+
 const summarizeCatalog = (catalog: NormalizedCatalog) => {
   const clusters = Object.keys(catalog || {}).length;
   let courses = 0;
@@ -79,9 +93,51 @@ export default function AdminPage({
   const [courseLoading, setCourseLoading] = useState(false);
   const [courseError, setCourseError] = useState("");
   const [courseSuccess, setCourseSuccess] = useState("");
+  const [requirementsSearch, setRequirementsSearch] = useState("");
+  const [requirementsCluster, setRequirementsCluster] = useState("all");
 
   const canManageAdmins = adminProfile?.role === "super";
   const catalogSummary = useMemo(() => summarizeCatalog(courseCatalog), [courseCatalog]);
+  const courseRows = useMemo(() => {
+    const rows: {
+      cluster: number;
+      name: string;
+      requirements: Record<string, string>;
+      universities: number;
+    }[] = [];
+
+    Object.entries(courseCatalog || {}).forEach(([clusterKey, courses]) => {
+      const cluster = Number(clusterKey);
+      if (!Number.isInteger(cluster) || cluster < 1) return;
+      if (!Array.isArray(courses)) return;
+      courses.forEach((course) => {
+        const name = String(course?.name || "").trim();
+        if (!name) return;
+        rows.push({
+          cluster,
+          name,
+          requirements: (course?.requirements || {}) as Record<string, string>,
+          universities: Array.isArray(course?.universities) ? course.universities.length : 0,
+        });
+      });
+    });
+
+    return rows.sort((a, b) => (a.cluster - b.cluster) || a.name.localeCompare(b.name));
+  }, [courseCatalog]);
+  const availableClusters = useMemo(() => {
+    const unique = new Set<number>();
+    courseRows.forEach((row) => unique.add(row.cluster));
+    return Array.from(unique).sort((a, b) => a - b);
+  }, [courseRows]);
+  const filteredCourses = useMemo(() => {
+    const query = requirementsSearch.trim().toLowerCase();
+    const clusterFilter = requirementsCluster === "all" ? null : Number(requirementsCluster);
+    return courseRows.filter((row) => {
+      if (clusterFilter && row.cluster !== clusterFilter) return false;
+      if (!query) return true;
+      return row.name.toLowerCase().includes(query);
+    });
+  }, [courseRows, requirementsCluster, requirementsSearch]);
 
   const updateField = (key: keyof typeof emptyAdminForm, value: string) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -426,7 +482,77 @@ export default function AdminPage({
         onUploadCatalog={onUploadCatalog}
         bundledCoursesCsvUrl={bundledCoursesCsvUrl}
       />
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight text-slate-900">Course Requirements</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Review subject requirements per course to verify catalog accuracy.
+            </p>
+          </div>
+          <div className="text-xs font-medium text-slate-500">
+            Showing {filteredCourses.length} of {courseRows.length} courses
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div>
+            <label htmlFor="admin_course_search" className="mb-1 block text-sm font-medium text-slate-700">
+              Search course
+            </label>
+            <input
+              id="admin_course_search"
+              type="text"
+              value={requirementsSearch}
+              onChange={(event) => setRequirementsSearch(event.target.value)}
+              className="ui-input"
+              placeholder="e.g. Clinical Medicine"
+            />
+          </div>
+          <div>
+            <label htmlFor="admin_course_cluster" className="mb-1 block text-sm font-medium text-slate-700">
+              Filter by cluster
+            </label>
+            <select
+              id="admin_course_cluster"
+              value={requirementsCluster}
+              onChange={(event) => setRequirementsCluster(event.target.value)}
+              className="ui-select"
+            >
+              <option value="all">All clusters</option>
+              {availableClusters.map((cluster) => (
+                <option key={cluster} value={cluster}>
+                  Cluster {cluster}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-200 text-sm">
+            <thead className="bg-slate-50 text-left text-slate-700">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Cluster</th>
+                <th className="px-3 py-2 font-semibold">Course</th>
+                <th className="px-3 py-2 font-semibold">Subject Requirements</th>
+                <th className="px-3 py-2 font-semibold">Universities</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
+              {filteredCourses.map((row) => (
+                <tr key={`${row.cluster}-${row.name}`} className="hover:bg-slate-50/70">
+                  <td className="px-3 py-2 font-medium text-slate-900">Cluster {row.cluster}</td>
+                  <td className="px-3 py-2">{row.name}</td>
+                  <td className="px-3 py-2 text-slate-600">{formatRequirements(row.requirements)}</td>
+                  <td className="px-3 py-2 text-slate-600">{row.universities}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </section>
   );
 }
-

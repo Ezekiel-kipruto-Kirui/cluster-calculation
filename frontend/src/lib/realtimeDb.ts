@@ -101,6 +101,25 @@ const normalizeSessionGrades = (value: any): Record<string, string> => {
   return normalized;
 };
 
+const normalizeClinicalMedicineSubject = (courseName: string, subject: string) => {
+  if (!subject) return subject;
+  if (String(courseName || "").trim().toUpperCase() !== "BACHELOR OF SCIENCE CLINICAL MEDICINE") return subject;
+  const normalized = subject.replace(/\s+/g, " ").trim();
+  if (/^mathematics\s*\/\s*physics$/i.test(normalized)) return "Mathematics";
+  return subject;
+};
+
+const normalizeCourseRequirements = (courseName: string, requirements: Record<string, string>) => {
+  const normalized: Record<string, string> = {};
+  Object.entries(requirements || {}).forEach(([subject, grade]) => {
+    const subjectName = normalizeClinicalMedicineSubject(courseName, String(subject || "").trim());
+    const normalizedGrade = String(grade || "").trim().toUpperCase();
+    if (!subjectName || !normalizedGrade) return;
+    normalized[subjectName] = normalizedGrade;
+  });
+  return normalized;
+};
+
 const getLocalSessionsMap = (): Record<string, ClusterSessionPayload> => {
   if (typeof window === "undefined") return {};
   try {
@@ -151,7 +170,10 @@ const saveLocalSession = (sessionPayload: ClusterSessionPayload): void => {
 
 const normalizeCourse = (rawCourse: any, fallbackName = ""): NormalizedCourse => ({
   name: rawCourse?.name || fallbackName,
-  requirements: (rawCourse?.requirements || {}) as Record<string, string>,
+  requirements: normalizeCourseRequirements(
+    rawCourse?.name || fallbackName,
+    (rawCourse?.requirements || {}) as Record<string, string>,
+  ),
   universities: Array.isArray(rawCourse?.universities)
     ? rawCourse.universities.map((entry: any) => ({
         name: String(entry?.name || ""),

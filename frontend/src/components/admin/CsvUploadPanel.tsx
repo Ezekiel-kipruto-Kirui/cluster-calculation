@@ -71,7 +71,8 @@ export default function CsvUploadPanel({
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold tracking-tight">Courses Upload</h2>
       <p className="mt-1 text-sm text-slate-600">
-        Upload a `courses.csv` compatible file through backend API into Firebase realtime database.
+        Upload a `courses.csv` compatible file through backend API into Firebase realtime database. Uploading replaces
+        the entire catalog (existing courses are deleted).
       </p>
 
       {!firebaseConfigured ? (
@@ -101,7 +102,7 @@ export default function CsvUploadPanel({
           disabled={isUploading || !firebaseConfigured}
           className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition enabled:hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
         >
-          Upload Selected CSV
+          Replace With Selected CSV
         </button>
         <button
           type="button"
@@ -109,7 +110,7 @@ export default function CsvUploadPanel({
           disabled={isUploading || !firebaseConfigured}
           className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition enabled:hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
         >
-          Upload Bundled courses.csv
+          Replace With Bundled courses.csv
         </button>
       </div>
 
