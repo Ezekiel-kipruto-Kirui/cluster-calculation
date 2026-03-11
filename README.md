@@ -18,10 +18,10 @@ npm run build
 ```
 
 This builds:
-- `frontend/dist` (frontend)
+- `dist/frontend/dist` (frontend)
 - `dist` (backend TypeScript output)
 
-If your hosting plan cannot build (for example, a low-resource Truehost plan), run the build locally and deploy the generated `dist/` and `frontend/dist/` folders. You can set `SKIP_BUILD=true` on the host to skip automatic build steps if the platform runs `npm run build` by default.
+If your hosting plan cannot build (for example, a low-resource Truehost plan), run the build locally and deploy the generated `dist/` folder (includes `dist/frontend/dist`). You can set `SKIP_BUILD=true` on the host to skip automatic build steps if the platform runs `npm run build` by default.
 
 ## Run backend server
 

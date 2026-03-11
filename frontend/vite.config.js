@@ -10,6 +10,8 @@ export default defineConfig({
   envPrefix: ["VITE_", "PAYABLE_"],
   plugins: [react()],
   build: {
+    outDir: path.resolve(__dirname, "..", "dist", "frontend", "dist"),
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
