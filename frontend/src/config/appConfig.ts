@@ -6,7 +6,7 @@ const parseNumberEnv = (value: string, fallback: number) => {
 };
 
 const rawPayableAmount = String(
-  import.meta.env.PAYABLE_AMOUNT || import.meta.env.VITE_PAYABLE_AMOUNT || "",
+  import.meta.env.VITE_PAYABLE_AMOUNT || import.meta.env.PAYABLE_AMOUNT || "",
 ).trim();
 
 export const PAYABLE_AMOUNT = parseNumberEnv(rawPayableAmount, 150);

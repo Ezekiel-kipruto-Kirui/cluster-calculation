@@ -35,7 +35,7 @@ const top7Total = (scores) => {
 };
 const clusterFormula = (r, t) => Number((Math.sqrt((r / 48) * (t / 84)) * 48 * 0.94).toFixed(3));
 const medicineEligibility = (gradesByCode) => {
-    const required = ["BIO", "CHE", "MAT", "PHY"];
+    const required = ["BIO", "CHE", "MAT"];
     return required.every((code) => gradesByCode[code] && gradesByCode[code] in GRADE_POINTS);
 };
 exports.medicineEligibility = medicineEligibility;
