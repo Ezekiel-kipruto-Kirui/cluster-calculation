@@ -482,23 +482,45 @@ const upsertSingleCourseCatalogEntryInDb = async ({ cluster, name, requirements,
     await getRealtimeDb().ref(courseCatalogPath).set(catalog);
     return mergedCourse;
 };
-const saveClusterSessionInDb = async ({ email, phoneNumber, amountPaid, grades, results, medicineEligible, paymentResponse, }) => {
-    const code = await createUniqueAccessCode();
+const saveClusterSessionInDb = async ({ code, email, phoneNumber, amountPaid, grades, results, medicineEligible, paymentResponse, }) => {
+    const db = getRealtimeDb();
+    const normalizedEmail = String(email || "").trim();
+    const normalizedCode = normalizeSessionCode(code);
     const timestamp = new Date().toISOString();
+    let resolvedCode = normalizedCode;
+    let createdAt = timestamp;
+    if (normalizedCode) {
+        const snapshot = await db.ref(`${sessionsPath}/${normalizedCode}`).once("value");
+        if (snapshot.exists()) {
+            const existing = snapshot.val() || {};
+            const existingEmail = String(existing.email || "").trim().toLowerCase();
+            if (existingEmail && existingEmail === normalizedEmail.toLowerCase()) {
+                createdAt = String(existing.createdAt || timestamp);
+            }
+            else {
+                const error = new Error("Access code already exists.");
+                error.statusCode = 409;
+                throw error;
+            }
+        }
+    }
+    if (!resolvedCode) {
+        resolvedCode = await createUniqueAccessCode();
+    }
     const payload = {
-        code,
-        email: String(email || "").trim(),
+        code: resolvedCode,
+        email: normalizedEmail,
         phoneNumber: String(phoneNumber || "").trim(),
         amountPaid: Number(amountPaid ?? 0),
         grades: normalizeSessionGrades(grades),
         results: normalizeSessionResults(results),
         medicineEligible: Boolean(medicineEligible),
         paymentResponse: paymentResponse || null,
-        createdAt: timestamp,
+        createdAt,
         updatedAt: timestamp,
         storage: "firebase",
     };
-    await getRealtimeDb().ref(`${sessionsPath}/${code}`).set(payload);
+    await db.ref(`${sessionsPath}/${resolvedCode}`).set(payload);
     return payload;
 };
 const fetchClusterSessionByCodeFromDb = async (code) => {
@@ -1271,7 +1293,10 @@ const adminLoginHandler = async (request, response) => {
         displayName: login.displayName || "",
     });
     if (!profile || profile.active === false) {
-        response.status(403).json({ error: "This account is not registered as an active admin." });
+        const hint = superAdminEmail
+            ? "Ask a super admin to add or re-activate this account."
+            : "Set SUPER_ADMIN_EMAIL in the backend env to bootstrap a super admin.";
+        response.status(403).json({ error: `This account is not registered as an active admin. ${hint}` });
         return;
     }
     const session = createAdminSession({
@@ -1395,6 +1420,7 @@ const saveClusterSessionHandler = async (request, response) => {
         return;
     const body = getBody(request);
     const session = await saveClusterSessionInDb({
+        code: body?.code,
         email: String(body?.email || ""),
         phoneNumber: String(body?.phoneNumber || ""),
         amountPaid: Number(body?.amountPaid ?? 0),
@@ -1831,9 +1857,10 @@ const sendEmailHandler = async (request, response) => {
         return;
     try {
         const body = getBody(request);
-        const to = sanitizeHeaderValue(body.email);
-        const subject = sanitizeHeaderValue(body.subject);
-        const message = String(body.message || "");
+        const query = request.query || {};
+        const to = sanitizeHeaderValue(body.email ?? query.email);
+        const subject = sanitizeHeaderValue(body.subject ?? query.subject);
+        const message = String(body.message ?? query.message ?? "");
         if (!to || !subject || !message) {
             response.status(400).json({ error: "email, subject, and message are required." });
             return;
