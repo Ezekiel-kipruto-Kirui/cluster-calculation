@@ -1,4 +1,7 @@
 {
-  "buildCommand": "echo \"Skipping build: using prebuilt frontend/dist\"",
-  "outputDirectory": "frontend/dist"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "other",
+  "buildCommand": null,
+  "outputDirectory": "frontend/dist",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
