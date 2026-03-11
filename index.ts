@@ -2565,11 +2565,12 @@ const startLocalServer = async ({
     tryListen(requestedPort, retries);
   });
 
+const app = createBackendServer();
+
 if (require.main === module) {
   const port = Number(getEnv("PORT", "5001")) || 5001;
   const host = getEnv("HOST", "0.0.0.0") || "0.0.0.0";
   const retries = Number(getEnv("PORT_RETRIES", "20")) || 20;
-  const app = createBackendServer();
 
   startLocalServer({ app, requestedPort: port, retries, host })
     .then(({ port: actualPort }) => {
@@ -2602,4 +2603,5 @@ if (require.main === module) {
     });
 }
 
-export {};
+export { createBackendServer };
+export default app;
