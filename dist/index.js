@@ -1978,6 +1978,7 @@ const createBackendServer = () => {
                 "/paymentStatus",
                 "/calculateClusterPoints",
                 "/sendEmail",
+                "/api/sendEmail",
                 "/api/catalog",
                 "/api/sessions/:code",
                 "/api/admin/login",
@@ -2011,6 +2012,7 @@ const createBackendServer = () => {
     app.all("/paymentStatus", withAsyncGuard("paymentStatus", paymentStatusHandler));
     app.all("/calculateClusterPoints", withAsyncGuard("calculateClusterPoints", calculateClusterPointsHandler));
     app.all("/sendEmail", withAsyncGuard("sendEmail", sendEmailHandler));
+    app.all("/api/sendEmail", withAsyncGuard("sendEmailApi", sendEmailHandler));
     // Serve React build (Vite) when available.
     const frontendDistCandidates = [
         path_1.default.resolve(__dirname, "..", "frontend", "dist"),
