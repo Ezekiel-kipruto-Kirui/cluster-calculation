@@ -3,9 +3,9 @@
   "version": 2,
   "buildCommand": "npm run build:backend",
   "functions": {
-    "api/index.js": {
+    "api/index.ts": {
       "runtime": "nodejs20.x"
     }
   },
-  "routes": [{ "src": "/(.*)", "dest": "/api/index.js" }]
+  "routes": [{ "src": "/(.*)", "dest": "/api/index" }]
 }
