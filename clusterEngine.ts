@@ -44,8 +44,13 @@ const clusterFormula = (r: number, t: number): number =>
   Number((Math.sqrt((r / 48) * (t / 84)) * 48 * 0.94).toFixed(3));
 
 export const medicineEligibility = (gradesByCode: GradeMap): boolean => {
-  const required: SubjectCode[] = ["BIO", "CHE", "MAT", "PHY"];
-  return required.every((code) => gradesByCode[code] && gradesByCode[code] in GRADE_POINTS);
+  const hasValidGrade = (code: SubjectCode) => Boolean(gradesByCode[code] && gradesByCode[code] in GRADE_POINTS);
+  return (
+    hasValidGrade("BIO") &&
+    hasValidGrade("CHE") &&
+    (hasValidGrade("MAT") || hasValidGrade("PHY")) &&
+    (hasValidGrade("ENG") || hasValidGrade("KIS"))
+  );
 };
 
 export const computeCluster = (cluster: number, rawGrades: GradeMap): number => {
