@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.createBackendServer = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const express_1 = __importDefault(require("express"));
 const path_1 = __importDefault(require("path"));
@@ -2015,6 +2016,8 @@ const createBackendServer = () => {
     app.all("/api/sendEmail", withAsyncGuard("sendEmailApi", sendEmailHandler));
     // Serve React build (Vite) when available.
     const frontendDistCandidates = [
+        path_1.default.resolve(__dirname, "..", "dist", "frontend", "dist"),
+        path_1.default.resolve(process.cwd(), "dist", "frontend", "dist"),
         path_1.default.resolve(__dirname, "..", "frontend", "dist"),
         path_1.default.resolve(__dirname, "..", "..", "frontend", "dist"),
         path_1.default.resolve(process.cwd(), "frontend", "dist"),
@@ -2069,6 +2072,7 @@ const createBackendServer = () => {
     });
     return app;
 };
+exports.createBackendServer = createBackendServer;
 const startLocalServer = async ({ app, requestedPort, retries, host, }) => new Promise((resolve, reject) => {
     const tryListen = (port, remainingRetries) => {
         const server = app.listen(port, host, () => {
@@ -2088,11 +2092,11 @@ const startLocalServer = async ({ app, requestedPort, retries, host, }) => new P
     };
     tryListen(requestedPort, retries);
 });
+const app = createBackendServer();
 if (require.main === module) {
     const port = Number(getEnv("PORT", "5001")) || 5001;
     const host = getEnv("HOST", "0.0.0.0") || "0.0.0.0";
     const retries = Number(getEnv("PORT_RETRIES", "20")) || 20;
-    const app = createBackendServer();
     startLocalServer({ app, requestedPort: port, retries, host })
         .then(({ port: actualPort }) => {
         logger.info("Backend server started", {
@@ -2123,3 +2127,4 @@ if (require.main === module) {
         process.exitCode = 1;
     });
 }
+exports.default = app;

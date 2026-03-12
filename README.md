@@ -17,11 +17,19 @@ npm --prefix frontend install
 npm run build
 ```
 
+This builds the backend TypeScript output into `dist`.
+
+To build both frontend and backend:
+
+```bash
+npm run build:full
+```
+
 This builds:
 - `dist/frontend/dist` (frontend)
 - `dist` (backend TypeScript output)
 
-If your hosting plan cannot build (for example, a low-resource Truehost plan), run the build locally and deploy the generated `dist/` folder (includes `dist/frontend/dist`). You can set `SKIP_BUILD=true` on the host to skip automatic build steps if the platform runs `npm run build` by default.
+If your hosting plan cannot build (for example, a low-resource Truehost plan), run the build locally and deploy the generated `dist/` folder (includes `dist/frontend/dist`). On the host, use `npm run build:truehost` or set `SKIP_FRONTEND_BUILD=true` to skip the frontend build while still compiling the backend. You can set `SKIP_BUILD=true` to skip all build steps if the platform runs `npm run build` by default.
 
 ## Run backend server
 
