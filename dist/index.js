@@ -74,11 +74,28 @@ const logger = {
 };
 // ---------- Firebase Realtime Database (REST) ----------
 const getFirebaseDatabaseUrl = () => {
-    const value = firstEnv("FIREBASE_DATABASE_URL", "VITE_FIREBASE_DATABASE_URL");
+    const value = firstEnv("FIREBASE_DATABASE_URL", "FIREBASE_DATABASEURL", "FIREBASE_databaseURL", "VITE_FIREBASE_DATABASE_URL");
     if (!value) {
         throw new Error("FIREBASE_DATABASE_URL is not configured.");
     }
-    return value.replace(/\/+$/, "");
+    let parsed;
+    try {
+        parsed = new URL(value);
+    }
+    catch {
+        throw new Error("FIREBASE_DATABASE_URL must be a valid URL.");
+    }
+    const normalizedPath = parsed.pathname.replace(/\/+$/, "");
+    if (normalizedPath && normalizedPath !== "") {
+        logLocal("warn", "FIREBASE_DATABASE_URL contains a path; ignoring it to avoid invalid RTDB requests.", {
+            providedPath: parsed.pathname,
+            expectedFormat: "https://<project-id>-default-rtdb.firebaseio.com",
+        });
+    }
+    const normalized = new URL(`${parsed.origin}/`);
+    if (parsed.search)
+        normalized.search = parsed.search;
+    return normalized;
 };
 const getFirebaseRealtimeDbAuthToken = () => firstEnv("FIREBASE_DATABASE_AUTH_TOKEN", "FIREBASE_DATABASE_SECRET", "FIREBASE_LEGACY_TOKEN");
 const normalizeRealtimePath = (value) => String(value || "")
@@ -88,13 +105,12 @@ const normalizeRealtimePath = (value) => String(value || "")
 const buildFirebaseRealtimeUrl = (dbPath = "") => {
     const normalizedPath = normalizeRealtimePath(dbPath);
     const base = getFirebaseDatabaseUrl();
-    const pathname = normalizedPath ? `${normalizedPath}.json` : ".json";
-    const url = new URL(`${base}/${pathname}`);
+    base.pathname = normalizedPath ? `/${normalizedPath}.json` : "/.json";
     const authToken = getFirebaseRealtimeDbAuthToken();
     if (authToken) {
-        url.searchParams.set("auth", authToken);
+        base.searchParams.set("auth", authToken);
     }
-    return url.toString();
+    return base.toString();
 };
 const firebaseRealtimeRequest = async ({ method, dbPath = "", body, }) => {
     let response;
@@ -1037,7 +1053,7 @@ const calculateClusterResults = async (grades) => {
 const getFirebasePublicConfig = () => ({
     apiKey: firstEnv("FIREBASE_API_KEY", "FIREBASE_WEB_API_KEY", "VITE_FIREBASE_API_KEY"),
     authDomain: firstEnv("FIREBASE_AUTH_DOMAIN", "VITE_FIREBASE_AUTH_DOMAIN"),
-    databaseURL: firstEnv("FIREBASE_DATABASE_URL", "VITE_FIREBASE_DATABASE_URL"),
+    databaseURL: firstEnv("FIREBASE_DATABASE_URL", "FIREBASE_DATABASEURL", "FIREBASE_databaseURL", "VITE_FIREBASE_DATABASE_URL"),
     projectId: firstEnv("FIREBASE_PROJECT_ID", "VITE_FIREBASE_PROJECT_ID"),
     storageBucket: firstEnv("FIREBASE_STORAGE_BUCKET", "VITE_FIREBASE_STORAGE_BUCKET"),
     messagingSenderId: firstEnv("FIREBASE_MESSAGING_SENDER_ID", "VITE_FIREBASE_MESSAGING_SENDER_ID"),
